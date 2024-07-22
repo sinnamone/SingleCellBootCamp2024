@@ -8,8 +8,8 @@ options(Seurat.object.assay.version = 'v5')
 
 #####load and create Seurat object from 10x cellranger count output directory
 
-  sample_1 <- Read10X("Patient_01/raw_feature_bc_matrix/")
-sample_2 <- Read10X("Patient_02/raw_feature_bc_matrix/")
+sample_1 <- Read10X("/Users/simone/Documents/GitHub/wishbone/SingleCellBootCamp2024/Day1/CodeAndData/DRY_Lab/Patient_01/raw_feature_bc_matrix/")
+sample_2 <- Read10X("/Users/simone/Documents/GitHub/wishbone/SingleCellBootCamp2024/Day1/CodeAndData/DRY_Lab/Patient_02/raw_feature_bc_matrix/")
 #sample_3 <- Read10X("corso_sc/Patient_03/raw_feature_bc_matrix/")
 
 #if you have a metadata table by cell barcode as row and feature as column can provide by meta.data option
@@ -157,7 +157,7 @@ seuratObj@assays$RNA@data[1:10,1:5]
 saveRDS(seuratObj,"QC_seurat_object.rds")
 #to reload the object
 
-seuratObj<- readRDS("seurat_object.rds")
+seuratObj<- readRDS("QC_seurat_object.rds")
 
 ##to save the entire envinroment
 save.image("seurat_analysis.Rda")
