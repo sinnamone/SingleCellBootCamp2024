@@ -1,0 +1,180 @@
+---
+title: "Normalization and Integration"
+date: "2024-07-23"
+output: 
+  html_notebook:
+    toc: true
+    toc_float: true
+    theme: united
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = "", fig.align = "center", fig.height = 5, fig.width = 7, warning = F)
+knitr::opts_knit$set(root.dir = "/home/lodato/mmiotto/misc/single_cell_bootcamp_unimi/") 
+
+library(Seurat)
+library(SeuratData)
+library(ggplot2)
+```
+
+## Load data
+```{r}
+obj <- LoadData("pbmcsca")
+obj
+```
+
+## Basic QC
+We now filter cells with more than 1000 features.
+```{r}
+obj <- subset(obj, nFeature_RNA > 1000)
+obj
+```
+
+The object contains data from nine different batches (stored in the Method column in the object metadata), representing seven different technologies.
+We can see them:
+```{r}
+table(obj$Method)
+```
+
+## Normalization
+The first step after the QC is normalization, to make gene expression comparable between cells. 
+
+As we have multiple batches, we have first to split the object RNA layer into them, and then perform the normalization.
+
+```{r}
+obj[["RNA"]] <- split(obj[["RNA"]], f = obj$Method)
+obj
+```
+
+We can now perform the normalization for each batch with just one line of code:
+```{r}
+obj <- NormalizeData(obj)
+obj
+```
+This normalization set a scale factor of 10,000 for each cell (so the sum of the counts of a cell is set to 10,000), and adjust the expression value of each gene accordingly. It then calculate the log1p of those values (natural logarithm of the value+1 to account for zeros).
+
+We can confirm that normalization has made the cells expression comparable:
+```{r}
+apply(obj[["RNA"]]$counts.10x_Chromium_v2[, 1:10], MARGIN = 2, FUN = function(x) {sum(x)})
+```
+
+
+```{r}
+apply(obj[["RNA"]]$data.10x_Chromium_v2[, 1:10], MARGIN = 2, FUN = function(x) {sum(exp(x) - 1)})
+```
+
+## Dimensionality reduction
+In order to run the PCA, we have to perform two operations on the data:
+
+* Extrapolate variable features
+* Scale data for those features: when performing PCA, input data should be scaled so that each feature has the same "weight"
+
+```{r}
+obj <- FindVariableFeatures(obj)
+head(VariableFeatures(obj), 10)
+```
+
+```{r}
+obj <- ScaleData(obj)
+obj
+```
+
+### PCA
+```{r}
+obj <- RunPCA(obj)
+obj
+```
+
+```{r}
+DimPlot(obj, group.by = "Method")
+```
+
+```{r}
+ElbowPlot(obj, ndims = 50) +
+  scale_x_continuous(breaks = seq(0, 50, 5))
+```
+
+
+### UMAP
+To better highlight differences in the sample, we can visualize the data with the UMAP.
+```{r}
+obj <- RunUMAP(obj, dims = 1:16, reduction = "pca", reduction.name = "umap.unintegrated")
+obj
+```
+
+We can now visualize it:
+```{r}
+DimPlot(obj, reduction = "umap.unintegrated", group.by = c("Method"))
+```
+
+We can see that they clusterize by Method. This data should be integrated, as in scRNA seq experiment the clusters should be celltypes.
+
+## Integration
+To perform the integration of the data, we will use the `IntegrateLayers` funtion whithin Seurat. There are different integration methods: CCA, RPCA, Harmony, FastMNN and scVI. We will show CCA and Harmony.
+
+### CCA
+```{r}
+obj <- IntegrateLayers(
+  object = obj, method = CCAIntegration,
+  orig.reduction = "pca", new.reduction = "integrated.cca",
+  verbose = FALSE
+)
+```
+
+
+```{r}
+obj <- RunUMAP(obj, dims = 1:16, reduction = "integrated.cca", reduction.name = "umap.cca")
+obj
+```
+
+```{r}
+DimPlot(obj, reduction = "umap.cca", group.by = c("Method"))
+```
+
+### Harmony
+```{r}
+obj <- IntegrateLayers(
+  object = obj, method = HarmonyIntegration,
+  orig.reduction = "pca", new.reduction = "integrated.harmony",
+  verbose = FALSE
+)
+```
+
+
+```{r}
+obj <- RunUMAP(obj, dims = 1:16, reduction = "integrated.harmony", reduction.name = "umap.harmony")
+obj
+```
+
+```{r}
+DimPlot(obj, reduction = "umap.harmony", group.by = c("Method"))
+```
+
+## Extra: SCTNormalization
+There is also another normalization method in Seurat, which is an upgraded version of NormalizeData: `SCTransform`. It will replace NormalizeData, FindVariableFeatures and ScaleData functions.
+It will introduce a new assay: SCT.
+
+```{r}
+obj <- SCTransform(obj, vst.flavor = "v2")
+obj
+```
+
+```{r}
+devtools::session_info()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
