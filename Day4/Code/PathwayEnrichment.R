@@ -5,12 +5,12 @@
 # if (!requireNamespace("org.Hs.eg.db", quietly = TRUE)) BiocManager::install("org.Hs.eg.db") # Install org.Hs.eg.db package if not already installed
 # if (!requireNamespace("DOSE", quietly = TRUE)) BiocManager::install("DOSE") # Install DOSE package if not already installed
 # 
-# library(Seurat)          # Load Seurat library for single-cell RNA-seq analysis
-# library(SeuratData)      # Load SeuratData library for example datasets
-# library(clusterProfiler) # Load clusterProfiler for gene set enrichment analysis
-# library(org.Hs.eg.db)    # Load org.Hs.eg.db for human gene annotations
-# library(DOSE)            # Load DOSE for enrichment analysis visualization
-# library(dplyr)           # Load dplyr for data manipulation and transformation
+library(Seurat)          # Load Seurat library for single-cell RNA-seq analysis
+library(SeuratData)      # Load SeuratData library for example datasets
+library(clusterProfiler) # Load clusterProfiler for gene set enrichment analysis
+library(org.Hs.eg.db)    # Load org.Hs.eg.db for human gene annotations
+library(DOSE)            # Load DOSE for enrichment analysis visualization
+library(dplyr)           # Load dplyr for data manipulation and transformation
 # 
 # # Load the PBMC 3k dataset
 # pbmc <- readRDS("/Users/simone/Downloads/Day4.rds")
@@ -35,11 +35,11 @@
 # # Run UMAP (Uniform Manifold Approximation and Projection) for visualization
 # pbmc <- RunUMAP(pbmc, dims = 1:10) # Perform UMAP dimensionality reduction using the first 10 PCA dimensions
 # DimPlot(pbmc, reduction = "umap", label = TRUE, label.size = 6) # Plot UMAP results with cluster labels
-# 
+pbmc <- readRDS("Day4_parsed.rds")
 # # Identify marker genes for each cluster
-# pbmc.markers <- FindAllMarkers(pbmc, only.pos = TRUE, min.pct = 0.1, logfc.threshold = 0.25) # Find marker genes for each cluster with specified thresholds
-# pbmc.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC) # For each cluster, select top 2 marker genes based on average log2 fold change
-pbmc <- readRDS(pbmc,"Day4_parsed.rds")
+pbmc.markers <- FindAllMarkers(pbmc, only.pos = TRUE, min.pct = 0.1, logfc.threshold = 0.25) # Find marker genes for each cluster with specified thresholds
+pbmc.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC) # For each cluster, select top 2 marker genes based on average log2 fold change
+
 ##################################################################
 # Subsetting top 100 markers with adjusted p-values lower than 0.05 #
 ##################################################################
